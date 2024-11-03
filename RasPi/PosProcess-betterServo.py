@@ -1,6 +1,6 @@
 import cv2
 from picamera2 import Picamera2
-from gpiozero import Servo
+# from gpiozero import Servo
 from time import sleep, time
 import board
 from adafruit_motor import servo
@@ -21,32 +21,27 @@ picam2.start()
 frame_center_x = picam2.preview_configuration.main.size[0] // 2
 frame_center_y = picam2.preview_configuration.main.size[1] // 2
 deadzone = frame_center_y // 4  # Use a portion of the height for deadzone
-
-GPIOX=18
-GPIOY=12
  
-myCorrection=0.45
-maxPW=(2.0+myCorrection)/1000
-minPW=(1.05-myCorrection)/1000
+maxPW=2400
+minPW=500
  
-servoX = Servo(GPIOX,min_pulse_width=minPW,max_pulse_width=maxPW)
-servoY = Servo(GPIOY)
-
-valueX = 0
-valueY = 0
+valueX = 90
+valueY = 90
 idle_start = 0
 idleing = False
 
-servoSensitivity = 0.005
+servoSensitivity = 1.5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-servoX.mid()
-servoY.mid()
-sleep(0.1)
-servoX.detach()
-servoY.detach()
 
+i2c = board.I2C()
+pca = PCA9685(i2c)
+pca.frequency = 50
 
+servoX = servo.Servo(pca.channels[0], min_pulse=500, max_pulse=2400)
+servoY = servo.Servo(pca.channels[4], min_pulse=1000, max_pulse=2000)
+servoX.angle = 90
+servoY.angle = 90
 
 try:
     while True:
@@ -60,7 +55,7 @@ try:
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
         # Perform face detection
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.35, minNeighbors=5, minSize=(100, 100))
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.25, minNeighbors=5, minSize=(100, 100))
 
         # Draw the center cross of the frame
         cv2.line(im, (0, frame_center_y), (im.shape[1], frame_center_y), (0, 255, 0), 2)
@@ -100,16 +95,13 @@ try:
                 message2 = "^"
                 changeY = - servoSensitivity
             
-            if valueX + changeX > -1 and valueX + changeX < 1 and changeX != 0:
+            if valueX + changeX > 0 and valueX + changeX < 180 and changeX != 0:
                 valueX = valueX + changeX
-                servoX.value = valueX
-            if valueY + changeY > -1 and valueY + changeY < 1 and changeY != 0:
+                servoX.angle = valueX
+            if valueY + changeY > 0 and valueY + changeY < 180 and changeY != 0:
                 valueY = valueY + changeY
-                servoY.value = valueY
+                servoY.angle = valueY
             print(f"X: {round(valueX,2)}, Y: {round(valueY,2)}")
-            sleep(0.05)
-            servoX.detach()
-            servoY.detach()
 
 
             # Display position messages
@@ -128,16 +120,11 @@ try:
                 idle_start = time()
             idle_period = time() - idle_start
             if idle_period > 5 and idle_period < 5.1 and idleing == True:
-                valueX = 0
-                valueY = 0
-                servoX.mid()
-                servoY.mid()
+                valueX = 90
+                valueY = 90
+                servoX.angle = 90
+                servoY.angle = 90
                 print("No face detected")
-                print(idle_period)
-                sleep(0.1)
-                servoX.detach()
-                servoY.detach()
-                sleep(0.1)
                 cv2.putText(im, "Center", (frame_center_x-130, frame_center_y+20), font, 3, (255, 255, 255), 5, cv2.LINE_AA)
 
 
@@ -153,11 +140,21 @@ try:
         cv2.imshow("Face Detection", im)
 
         # Break the loop when 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
             break
+        elif key == ord('w'):
+            servoX.angle = 90
+            servoY.angle = 90
+            valueX = 90
+            valueY = 90
+
 
 finally:
     # Release resources
     cv2.destroyAllWindows()
     picam2.stop()
     picam2.close()
+    pca.deinit()
+    servoX.angle = None
+    servoY.angle = None

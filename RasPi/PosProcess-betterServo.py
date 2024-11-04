@@ -17,6 +17,12 @@ picam2.preview_configuration.align()
 picam2.configure("preview")
 picam2.start()
 
+# Set up video writer
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = None
+is_recording = False  # Flag to control recording state
+recording_counter = 0  # Counter for multiple clips
+
 
 # Get the dimensions for deadzone calculations
 frame_center_x = picam2.preview_configuration.main.size[0] // 2
@@ -26,13 +32,13 @@ deadzone = frame_center_y // 4  # Use a portion of the height for deadzone
 idle_start = 0
 idleing = False
 
-servoSensitivity = 1.5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 i2c = board.I2C()
 pca = PCA9685(i2c)
 pca.frequency = 50
 
+servoSensitivity = 1.5
 servoX = servo.Servo(pca.channels[0], min_pulse=500, max_pulse=2400)
 servoY = servo.Servo(pca.channels[1], min_pulse=1000, max_pulse=2000)
 servoX.angle = 90
@@ -48,6 +54,8 @@ try:
         im = picam2.capture_array()
         # Flip the image horizontally for a mirror effect
         im = cv2.flip(im, 1)
+
+        original = im.copy()
 
         # Convert the image to grayscale for face detection
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -111,7 +119,6 @@ try:
             idleing = False
             idle_period = 0
 
-            
         else:
             if idleing == False:
                 idleing =  True
@@ -125,6 +132,13 @@ try:
                 print("No face detected")
                 cv2.putText(im, "Center", (frame_center_x-130, frame_center_y+20), font, 3, (255, 255, 255), 5, cv2.LINE_AA)
 
+        if is_recording:
+            cv2.putText(im, "Recording...", (50, 100), font, 2, (0, 0, 255), 3, cv2.LINE_AA)
+        if out is None:  # Initialize VideoWriter when recording starts
+            timestamp = time.strftime("%y%m%d-%H%M%S") # 241016-220234_clip1
+            filename = f'{timestamp}_clip{recording_counter}.mkv'  # New file for each clip
+            out = cv2.VideoWriter(filename, fourcc, 20.0, (im.shape[1], im.shape[0]))
+        out.write(original)  # Write the original frame to the video file
 
         # Calculate and display FPS
         end_time = time()
@@ -136,6 +150,7 @@ try:
 
         # Display the image with detected faces
         cv2.imshow("Face Detection", im)
+        cv2.imshow("Original", original)
 
         # Break the loop when 'q' is pressed
         key = cv2.waitKey(1) & 0xFF
@@ -146,6 +161,15 @@ try:
             servoY.angle = 90
             valueX = 90
             valueY = 90
+        elif key == ord('r'):  # Toggle recording on 'r' press
+            is_recording = not is_recording
+            if is_recording: # Start new recording
+                recording_counter += 1  # Increment the clip counter when recording starts
+            else: # Stop old recording
+                if out is not None:  # Stop recording and release the writer
+                    out.release()
+                    out = None
+            print(f"Recording: {'On' if is_recording else 'Off'}")
 
 
 finally:
@@ -156,3 +180,5 @@ finally:
     servoX.angle = None
     servoY.angle = None
     pca.deinit()
+    if out is not None:
+        out.release()

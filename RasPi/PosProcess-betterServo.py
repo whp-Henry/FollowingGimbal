@@ -10,7 +10,8 @@ from adafruit_pca9685 import PCA9685
 face_cascade = cv2.CascadeClassifier('/home/admin/Desktop/FollowingGimbal/RasPi/haarcascade_frontalface_default.xml')
 
 picam2 = Picamera2()
-picam2.preview_configuration.main.size = (1280, 960)
+picam2.preview_configuration.main.size = (640, 480)
+# picam2.preview_configuration.main.size = (1280, 960)
 picam2.preview_configuration.main.format = "RGB888"
 picam2.preview_configuration.align()
 picam2.configure("preview")
@@ -21,27 +22,24 @@ picam2.start()
 frame_center_x = picam2.preview_configuration.main.size[0] // 2
 frame_center_y = picam2.preview_configuration.main.size[1] // 2
 deadzone = frame_center_y // 4  # Use a portion of the height for deadzone
- 
-maxPW=2400
-minPW=500
- 
-valueX = 90
-valueY = 90
+
 idle_start = 0
 idleing = False
 
 servoSensitivity = 1.5
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-
 i2c = board.I2C()
 pca = PCA9685(i2c)
 pca.frequency = 50
 
 servoX = servo.Servo(pca.channels[0], min_pulse=500, max_pulse=2400)
-servoY = servo.Servo(pca.channels[4], min_pulse=1000, max_pulse=2000)
+servoY = servo.Servo(pca.channels[1], min_pulse=1000, max_pulse=2000)
 servoX.angle = 90
 servoY.angle = 90
+# Current Servo angles
+valueX = 90
+valueY = 90
 
 try:
     while True:
@@ -155,6 +153,6 @@ finally:
     cv2.destroyAllWindows()
     picam2.stop()
     picam2.close()
-    pca.deinit()
     servoX.angle = None
     servoY.angle = None
+    pca.deinit()

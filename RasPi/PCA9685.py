@@ -49,7 +49,7 @@ pca.frequency = 50
 
 
 servoX = servo.Servo(pca.channels[0], min_pulse=500, max_pulse=2400)
-servoY = servo.Servo(pca.channels[4], min_pulse=1000, max_pulse=2000)
+servoY = servo.Servo(pca.channels[1], min_pulse=1000, max_pulse=2000)
 servoX.angle = 90
 servoY.angle = 90
 
@@ -58,24 +58,24 @@ sleep(1)
 
 
 
-fraction = 0.5
-while fraction < 1.0:
-    servoX.fraction = fraction
-    fraction += 0.1
-    sleep(0.01)
+# fraction = 0.5
+# while fraction < 1.0:
+#     servoX.fraction = fraction
+#     fraction += 0.1
+#     sleep(0.01)
 
 
 
-# for _ in range(5):
-#     servoX.angle = 0
-#     servoY.angle = 0
-#     sleep(2)
-#     servoX.angle = 90
-#     servoY.angle = 90
-#     sleep(2)
-#     servoX.angle = 180
-#     servoY.angle = 180
-#     sleep(2)
+for _ in range(5):
+    servoX.angle = 0
+    servoY.angle = 0
+    sleep(2)
+    servoX.angle = 90
+    servoY.angle = 90
+    sleep(2)
+    servoX.angle = 180
+    servoY.angle = 180
+    sleep(2)
 
 
 pca.deinit()

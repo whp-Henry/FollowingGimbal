@@ -1,6 +1,5 @@
 import cv2
 from picamera2 import Picamera2
-# from gpiozero import Servo
 from time import sleep, time, strftime
 import board
 from adafruit_motor import servo
@@ -112,10 +111,7 @@ try:
 
             # Display position messages
             cv2.putText(im, message1, (frame_center_x, frame_center_y), font, 10, (255, 255, 255), 2, cv2.LINE_AA)
-            # cv2.putText(im, message1, (52, 102), font, 1, (0,0,0), 2, cv2.LINE_AA)
-
             cv2.putText(im, message2, (frame_center_x, frame_center_y+200), font, 10, (255, 255, 255), 2, cv2.LINE_AA)
-            # cv2.putText(im, message2, (52, 202), font, 1, (0,0,0), 2, cv2.LINE_AA)
             idleing = False
             idle_period = 0
 
@@ -133,12 +129,14 @@ try:
                 cv2.putText(im, "Center", (frame_center_x-130, frame_center_y+20), font, 3, (255, 255, 255), 5, cv2.LINE_AA)
 
         if is_recording:
-            cv2.putText(im, "Recording...", (10, 40), font, 1.5, (0, 0, 255), 3, cv2.LINE_AA)
             if out is None:  # Initialize VideoWriter when recording starts
                 timestamp = strftime("%y%m%d-%H%M%S") # 241016-220234_clip1
                 filename = f'{timestamp}_clip{recording_counter}.mkv'  # New file for each clip
                 out = cv2.VideoWriter(filename, fourcc, 20.0, (im.shape[1], im.shape[0]))
             out.write(original)  # Write the original frame to the video file
+            cv2.putText(im, "Recording...", (10, 40), font, 1.5, (0, 0, 255), 3, cv2.LINE_AA)
+            cv2.putText(original, "Recording...", (10, 40), font, 1.5, (0, 0, 255), 3, cv2.LINE_AA)
+
 
         # Calculate and display FPS
         end_time = time()
